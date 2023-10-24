@@ -1,0 +1,35 @@
+import numpy as np
+from scipy.sparse.linalg import svds
+import pandas as pd
+
+# Sample user-item interaction data (user ratings for items)
+data = pd.DataFrame({
+    'User': ['User1', 'User1', 'User2', 'User3', 'User4', 'User4'],
+    'Item': ['Item1', 'Item2', 'Item2', 'Item3', 'Item4', 'Item5'],
+    'Rating': [5, 4, 3, 2, 4, 5]
+})
+
+# Create a user-item matrix (pivot table)
+user_item_matrix = data.pivot(index='User', columns='Item', values='Rating').fillna(0)
+
+# Normalize the data by subtracting user mean from each rating
+user_ratings_mean = np.mean(user_item_matrix, axis=1)
+user_item_matrix_normalized = user_item_matrix.sub(user_ratings_mean, axis=0).fillna(0)
+
+# Perform Singular Value Decomposition (SVD)
+U, sigma, Vt = svds(user_item_matrix_normalized, k=2)
+
+# Reconstruct the original matrix with reduced dimensions
+predicted_ratings = np.dot(np.dot(U, np.diag(sigma)), Vt) + user_ratings_mean.values.reshape(-1, 1)
+predicted_ratings_df = pd.DataFrame(predicted_ratings, columns=user_item_matrix.columns, index=user_item_matrix.index)
+
+# Recommend items for a specific user
+user = 'User1'
+recommended_items = predicted_ratings_df.loc[user].sort_values(ascending=False)
+print(f"Recommended items for {user}:\n{recommended_items}")
+
+# Evaluate the recommendation system (MSE)
+from sklearn.metrics import mean_squared_error
+
+mse = mean_squared_error(user_item_matrix, predicted_ratings_df)
+print(f"Mean Squared Error (MSE) of the recommendation system: {mse:.2f}")
