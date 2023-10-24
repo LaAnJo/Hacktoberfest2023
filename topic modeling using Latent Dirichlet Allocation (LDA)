@@ -1,0 +1,44 @@
+import numpy as np
+import pandas as pd
+from sklearn.feature_extraction.text import CountVectorizer
+from sklearn.decomposition import LatentDirichletAllocation
+
+# Sample document collection
+documents = [
+    "Machine learning is a subset of artificial intelligence.",
+    "Natural language processing is important for NLP.",
+    "Data science involves analyzing data to extract insights.",
+    "Deep learning is a subset of machine learning.",
+    "Artificial intelligence is shaping the future of technology."
+]
+
+# Convert text documents into a document-term matrix
+vectorizer = CountVectorizer()
+X = vectorizer.fit_transform(documents)
+
+# Perform Latent Dirichlet Allocation (LDA)
+n_topics = 2  # Number of topics (you can adjust this)
+lda = LatentDirichletAllocation(n_components=n_topics, random_state=42)
+lda.fit(X)
+
+# Extract and display topics and their associated words
+feature_names = vectorizer.get_feature_names_out()
+topic_words = {}
+
+for topic_idx, topic in enumerate(lda.components_):
+    top_word_indices = topic.argsort()[-5:][::-1]  # Top 5 words per topic
+    top_words = [feature_names[i] for i in top_word_indices]
+    topic_words[f"Topic {topic_idx + 1}"] = top_words
+
+topics_df = pd.DataFrame(topic_words)
+print("Topics and their top words:")
+print(topics_df)
+
+# Assign topics to each document
+topic_assignments = lda.transform(X)
+document_topics = [np.argmax(doc) + 1 for doc in topic_assignments]
+
+# Display document-topic assignments
+documents_df = pd.DataFrame({'Document': documents, 'Topic': document_topics})
+print("\nDocument-Topic Assignments:")
+print(documents_df)
